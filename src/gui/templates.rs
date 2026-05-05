@@ -36,8 +36,25 @@ impl WidgetTemplate for Ui {
     view! {
         gtk::Overlay {
             /// Background image
-            #[name = "background"]
-            gtk::Picture,
+            #[name = "background_image"]
+            gtk::Picture {
+                set_hexpand: true,
+                set_vexpand: true,
+                set_halign: gtk::Align::Fill,
+                set_valign: gtk::Align::Fill,
+            },
+
+            /// Background video
+            #[name = "background_video"]
+            gtk::Video {
+                set_hexpand: true,
+                set_vexpand: true,
+                set_halign: gtk::Align::Fill,
+                set_valign: gtk::Align::Fill,
+                set_autoplay: true,
+                set_loop: true,
+                set_visible: false,
+            },
 
             /// Main login box
             add_overlay = &gtk::Frame {

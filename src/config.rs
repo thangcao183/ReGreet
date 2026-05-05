@@ -67,6 +67,22 @@ struct Background {
     fit: BgFit,
 }
 
+impl Background {
+    fn is_video(&self) -> bool {
+        self.path
+            .as_deref()
+            .and_then(|path| {
+                Path::new(path)
+                    .extension()
+                    .and_then(|ext| ext.to_str())
+                    .map(|ext| ext.to_ascii_lowercase())
+            })
+            .map_or(false, |ext| {
+                matches!(ext.as_str(), "mp4" | "webm" | "mkv" | "ogv" | "ogm")
+            })
+    }
+}
+
 /// Struct for various system commands
 #[derive(Deserialize, Serialize)]
 pub struct SystemCommands {
@@ -143,6 +159,10 @@ impl Config {
 
     pub fn get_background(&self) -> Option<&str> {
         self.background.path.as_deref()
+    }
+
+    pub fn is_video_background(&self) -> bool {
+        self.background.is_video()
     }
 
     #[cfg(feature = "gtk4_8")]

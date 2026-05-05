@@ -60,6 +60,24 @@ fn setup_settings(model: &Greeter, root: &gtk::ApplicationWindow) {
     };
 }
 
+/// Setup the background widget based on the configured asset.
+fn setup_background(model: &Greeter, widgets: &GreeterWidgets) {
+    let background_path = model.config.get_background();
+    let is_video = model.config.is_video_background();
+    let has_background = background_path.is_some();
+
+    widgets.ui.background_image.set_visible(has_background && !is_video);
+    widgets.ui.background_video.set_visible(has_background && is_video);
+
+    if is_video {
+        if let Some(path) = background_path {
+            widgets.ui.background_video.set_filename(Some(path));
+        }
+    } else {
+        widgets.ui.background_image.set_filename(background_path);
+    }
+}
+
 /// Populate the user and session combo boxes with entries.
 fn setup_users_sessions(model: &Greeter, widgets: &GreeterWidgets) {
     // The user that is shown during initial login
@@ -382,6 +400,8 @@ impl AsyncComponent for Greeter {
                 gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
             );
         };
+
+        setup_background(&model, &widgets);
 
         // Set the default behaviour of pressing the Return key to act like the login button.
         root.set_default_widget(Some(&widgets.ui.login_button));
