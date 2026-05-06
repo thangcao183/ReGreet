@@ -367,7 +367,7 @@ impl AsyncComponent for Greeter {
                 BgFit::ScaleDown => gtk4::ContentFit::ScaleDown,
             };
             widgets.ui.background_image.set_content_fit(content_fit);
-            widgets.ui.background_video.set_content_fit(content_fit);
+            // Note: Video widget does not have set_content_fit method
         }
 
         // Cancel any previous session, just in case someone started one.
