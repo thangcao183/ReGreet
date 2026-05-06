@@ -14,6 +14,8 @@ use serde::{
 };
 use tokio::time::sleep;
 
+const CENTER_COLUMN_WIDTH: u32 = 360;
+
 #[derive(Deserialize, Clone)]
 pub struct ClockConfig {
     /// A [strftime][fmt] argument
@@ -126,10 +128,13 @@ impl Component for Clock {
     view! {
         gtk::Box {
             set_orientation: gtk::Orientation::Vertical,
-            set_width_request: label_width.min(i32::MAX as u32) as i32,
+            set_halign: gtk::Align::Center,
+            set_width_request: label_width.max(CENTER_COLUMN_WIDTH).min(i32::MAX as u32) as i32,
 
             gtk::Label {
                 add_css_class: "clock-time",
+                set_halign: gtk::Align::Center,
+                set_justify: gtk::Justification::Center,
                 set_xalign: 0.5,
 
                 #[watch]
@@ -138,6 +143,8 @@ impl Component for Clock {
 
             gtk::Label {
                 add_css_class: "clock-date",
+                set_halign: gtk::Align::Center,
+                set_justify: gtk::Justification::Center,
                 set_xalign: 0.5,
 
                 #[watch]

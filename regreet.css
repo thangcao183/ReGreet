@@ -100,6 +100,8 @@ combobox button {
 .identity-field,
 .password-field {
     min-width: 200px;
+    margin-left: 100px;
+    margin-right: 100px;
 }
 
 .identity-field button,
@@ -213,12 +215,14 @@ togglebutton:checked {
 }
 
 .session-field {
-    min-width: 190px;
+    min-width: 200px;
     background-color: transparent;
     background-image: none;
     border: 0;
     box-shadow: none;
     padding: 0;
+    margin-left: 100px;
+    margin-right: 100px;
 }
 
 .session-field button {
@@ -228,7 +232,7 @@ togglebutton:checked {
     border: 0;
     border-radius: 5px;
     color: #c3c6fb;
-    padding: 0 8px 0 0;
+    padding: 0 20px 0 32px;
     box-shadow: none;
     text-shadow: 0 2px 8px alpha(#000000, 0.85);
 }
@@ -256,7 +260,7 @@ togglebutton:checked {
 }
 
 combobox popover contents {
-    min-width: 190px;
+    min-width: 360px;
 }
 
 combobox popover row {
@@ -298,6 +302,7 @@ popover contents {
     background-image: none;
     color: #c3c6fb;
     border: 0;
+    text-align: center;
     border-radius: 0;
     padding: 0;
     box-shadow: none;
@@ -320,6 +325,7 @@ popover row {
 popover row label {
     color: #c3c6fb;
     font-size: 11px;
+    text-align: center;
     font-weight: 600;
     padding: 6px 10px;
     text-shadow: 0 2px 8px alpha(#000000, 0.85);
@@ -329,6 +335,7 @@ popover row:hover,
 popover row:selected {
     background-color: alpha(#c3c6fb, 0.12);
     background-image: none;
+    text-align: center;
     color: #eef0ff;
     box-shadow: 0 0 18px alpha(#c3c6fb, 0.10);
 }

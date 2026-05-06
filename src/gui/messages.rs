@@ -51,8 +51,6 @@ pub enum InputMsg {
         input: String,
         info: UserSessInfo,
     },
-    /// Cancel the login request
-    Cancel,
     /// The current user was changed in the GUI.
     UserChanged(UserSessInfo),
     /// Toggle manual entry of user.

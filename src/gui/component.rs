@@ -189,6 +189,12 @@ fn set_profile_avatar(model: &Greeter, widgets: &GreeterWidgets, username: Optio
     set_profile_avatar_picture(&widgets.ui.profile_avatar, username, model.demo);
 }
 
+fn center_combo_box_text(combo_box: &gtk::ComboBoxText) {
+    for cell in combo_box.cells() {
+        cell.set_xalign(0.5);
+    }
+}
+
 /// Populate the user and session combo boxes with entries.
 fn setup_users_sessions(model: &Greeter, widgets: &GreeterWidgets) {
     // The user that is shown during initial login
@@ -208,6 +214,8 @@ fn setup_users_sessions(model: &Greeter, widgets: &GreeterWidgets) {
         debug!("Found session: {session}");
         widgets.ui.sessions_box.append(Some(session), session);
     }
+
+    center_combo_box_text(&widgets.ui.sessions_box);
 
     // If the last user is known, show their login initially.
     if let Some(last_user) = model.cache.get_last_user() {
@@ -261,11 +269,11 @@ impl AsyncComponent for Greeter {
                     model.clock.widget(),
                 },
 
-                #[template_child]
-                message_label {
-                    #[track(model.updates.changed(Updates::message()))]
-                    set_label: &model.updates.message,
-                },
+                // #[template_child]
+                // message_label {
+                //     #[track(model.updates.changed(Updates::message()))]
+                //     set_label: &model.updates.message,
+                // },
                 #[template_child]
                 session_label {
                     #[track(model.updates.changed(Updates::input_mode()))]
@@ -415,45 +423,45 @@ impl AsyncComponent for Greeter {
                     set_visible: false,
                     connect_clicked => Self::Input::ToggleManualSess,
                 },
-                #[template_child]
-                cancel_button {
-                    #[track(model.updates.changed(Updates::input_mode()))]
-                    set_visible: model.updates.is_input(),
-                    connect_clicked => Self::Input::Cancel,
-                },
-                #[template_child]
-                login_button {
-                    #[track(
-                        model.updates.changed(Updates::input_mode())
-                        && !model.updates.is_input()
-                    )]
-                    grab_focus: (),
-                    connect_clicked[
-                        sender,
-                        secret_entry = ui.secret_entry.clone(),
-                        visible_entry = ui.visible_entry.clone(),
-                        usernames_box = ui.usernames_box.clone(),
-                        username_entry = ui.username_entry.clone(),
-                        sessions_box = ui.sessions_box.clone(),
-                        session_entry = ui.session_entry.clone(),
-                    ] => move |_| {
-                        sender.input(Self::Input::Login {
-                            input: if secret_entry.is_visible() {
-                                // This should correspond to `InputMode::Secret`.
-                                secret_entry.text().to_string()
-                            } else if EntryExt::is_visible(&visible_entry) {
-                                // This should correspond to `InputMode::Visible`.
-                                visible_entry.text().to_string()
-                            } else {
-                                // This should correspond to `InputMode::None`.
-                                String::new()
-                            },
-                            info: UserSessInfo::extract(
-                                &usernames_box, &username_entry, &sessions_box, &session_entry
-                            ),
-                        })
-                    }
-                },
+                // #[template_child]
+                // cancel_button {
+                //     #[track(model.updates.changed(Updates::input_mode()))]
+                //     set_visible: model.updates.is_input(),
+                //     connect_clicked => Self::Input::Cancel,
+                // },
+                // #[template_child]
+                // login_button {
+                //     #[track(
+                //         model.updates.changed(Updates::input_mode())
+                //         && !model.updates.is_input()
+                //     )]
+                //     grab_focus: (),
+                //     connect_clicked[
+                //         sender,
+                //         secret_entry = ui.secret_entry.clone(),
+                //         visible_entry = ui.visible_entry.clone(),
+                //         usernames_box = ui.usernames_box.clone(),
+                //         username_entry = ui.username_entry.clone(),
+                //         sessions_box = ui.sessions_box.clone(),
+                //         session_entry = ui.session_entry.clone(),
+                //     ] => move |_| {
+                //         sender.input(Self::Input::Login {
+                //             input: if secret_entry.is_visible() {
+                //                 // This should correspond to `InputMode::Secret`.
+                //                 secret_entry.text().to_string()
+                //             } else if EntryExt::is_visible(&visible_entry) {
+                //                 // This should correspond to `InputMode::Visible`.
+                //                 visible_entry.text().to_string()
+                //             } else {
+                //                 // This should correspond to `InputMode::None`.
+                //                 String::new()
+                //             },
+                //             info: UserSessInfo::extract(
+                //                 &usernames_box, &username_entry, &sessions_box, &session_entry
+                //             ),
+                //         })
+                //     }
+                // },
                 #[template_child]
                 error_info {
                     #[track(model.updates.changed(Updates::error()))]
@@ -530,7 +538,7 @@ impl AsyncComponent for Greeter {
         setup_background(&model, &widgets);
 
         // Set the default behaviour of pressing the Return key to act like the login button.
-        root.set_default_widget(Some(&widgets.ui.login_button));
+        // root.set_default_widget(Some(&widgets.ui.login_button));
 
         AsyncComponentParts { model, widgets }
     }
@@ -551,7 +559,6 @@ impl AsyncComponent for Greeter {
                 self.sess_info = Some(info);
                 self.login_click_handler(&sender, input).await
             }
-            Self::Input::Cancel => self.cancel_click_handler().await,
             Self::Input::UserChanged(info) => {
                 self.sess_info = Some(info);
                 self.user_change_handler();
