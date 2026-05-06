@@ -4,6 +4,7 @@
 
 //! Templates for various GUI components
 #![allow(dead_code)] // Silence dead code warnings for UI code that isn't dead
+#![allow(deprecated)]
 
 use gtk::prelude::*;
 use relm4::{RelmWidgetExt, WidgetTemplate, gtk};

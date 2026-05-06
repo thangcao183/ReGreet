@@ -4,8 +4,10 @@
 
 //! Message definitions for communication between the view and the model
 
+#[allow(deprecated)]
 use educe::Educe;
 use greetd_ipc::Response;
+#[allow(deprecated)]
 use relm4::gtk::{ComboBoxText, Entry, glib::GString, prelude::*};
 
 #[derive(Debug)]
@@ -23,6 +25,7 @@ pub struct UserSessInfo {
 
 impl UserSessInfo {
     /// Extract session and user info from the relevant widgets.
+    #[allow(deprecated)]
     pub(super) fn extract(
         usernames_box: &ComboBoxText,
         username_entry: &Entry,

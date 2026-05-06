@@ -4,6 +4,8 @@
 
 //! Setup for using the greeter as a Relm4 component
 
+#![allow(deprecated)]
+
 use std::path::PathBuf;
 
 use relm4::{
@@ -141,9 +143,6 @@ impl AsyncComponent for Greeter {
             #[name = "ui"]
             #[template]
             Ui {
-                #[template_child]
-                background { set_filename: model.config.get_background() },
-
                 #[template_child]
                 clock_frame {
                     model.clock.widget(),
