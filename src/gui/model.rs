@@ -91,6 +91,8 @@ pub struct Greeter {
     pub(super) updates: Updates,
     /// Is it run as demo
     pub(super) demo: bool,
+    /// Password entered before greetd asks for it.
+    pub(super) pending_input: Option<String>,
 
     pub(super) clock: Controller<Clock>,
 }
@@ -124,7 +126,7 @@ impl Greeter {
 
         Self {
             greetd_client,
-            sys_util: SysUtil::new(&config)
+            sys_util: SysUtil::new(&config, demo)
                 .await
                 .expect("Couldn't read available users and sessions"),
             cache: Cache::new(),
@@ -132,6 +134,7 @@ impl Greeter {
             config,
             updates,
             demo,
+            pending_input: None,
             clock,
         }
     }
@@ -313,6 +316,9 @@ impl Greeter {
                         self.updates.set_input(String::new());
                         self.updates
                             .set_input_prompt(auth_message.trim_end().to_string());
+                        if let Some(input) = self.pending_input.take() {
+                            self.send_input_command(sender, input);
+                        }
                         return;
                     }
                     AuthMessageType::Visible => {
@@ -322,6 +328,9 @@ impl Greeter {
                         self.updates.set_input(String::new());
                         self.updates
                             .set_input_prompt(auth_message.trim_end().to_string());
+                        if let Some(input) = self.pending_input.take() {
+                            self.send_input_command(sender, input);
+                        }
                         return;
                     }
                     AuthMessageType::Info => {
@@ -423,6 +432,9 @@ impl Greeter {
                 self.send_input(sender, input).await;
             }
             AuthStatus::NotStarted => {
+                if !input.is_empty() {
+                    self.pending_input = Some(input);
+                }
                 self.create_session(sender).await;
             }
         };
@@ -433,16 +445,21 @@ impl Greeter {
         // Reset the password field, for convenience when the user has to re-enter a password.
         self.updates.set_input(String::new());
 
-        // Send the password, as authentication for the current user.
-        let resp = self
-            .greetd_client
-            .lock()
-            .await
-            .send_auth_response(Some(input))
-            .await
-            .unwrap_or_else(|err| panic!("Failed to send input: {err}"));
+        self.send_input_command(sender, input);
+    }
 
-        self.handle_greetd_response(sender, resp).await;
+    fn send_input_command(&self, sender: &AsyncComponentSender<Self>, input: String) {
+        // Send the password, as authentication for the current user.
+        let client = Arc::clone(&self.greetd_client);
+        sender.oneshot_command(async move {
+            let resp = client
+                .lock()
+                .await
+                .send_auth_response(Some(input))
+                .await
+                .unwrap_or_else(|err| panic!("Failed to send input: {err}"));
+            CommandMsg::HandleGreetdResponse(resp)
+        });
     }
 
     /// Get the currently selected username.

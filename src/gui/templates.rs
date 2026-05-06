@@ -36,46 +36,81 @@ impl WidgetTemplate for EntryLabel {
 impl WidgetTemplate for Ui {
     view! {
         gtk::Overlay {
-            /// Background image
-            #[name = "background_image"]
-            gtk::Picture {
+            /// Background media
+            #[name = "background_box"]
+            gtk::Box {
                 set_hexpand: true,
                 set_vexpand: true,
                 set_halign: gtk::Align::Fill,
                 set_valign: gtk::Align::Fill,
-            },
 
-            /// Background video
-            #[name = "background_video"]
-            gtk::Video {
-                set_hexpand: true,
-                set_vexpand: true,
-                set_halign: gtk::Align::Fill,
-                set_valign: gtk::Align::Fill,
-                set_autoplay: true,
-                set_loop: true,
-                set_visible: false,
+                /// Background image
+                #[name = "background_image"]
+                gtk::Picture {
+                    set_hexpand: true,
+                    set_vexpand: true,
+                    set_halign: gtk::Align::Fill,
+                    set_valign: gtk::Align::Fill,
+                },
+
+                /// Background video
+                #[name = "background_video"]
+                gtk::Picture {
+                    set_hexpand: true,
+                    set_vexpand: true,
+                    set_halign: gtk::Align::Fill,
+                    set_valign: gtk::Align::Fill,
+                },
             },
 
             /// Main login box
             add_overlay = &gtk::Frame {
-                set_halign: gtk::Align::Center,
+                set_halign: gtk::Align::Start,
                 set_valign: gtk::Align::Center,
-                add_css_class: "background",
+                set_margin_start: 72,
+                add_css_class: "login-shell",
 
                 gtk::Grid {
-                    set_column_spacing: 15,
-                    set_margin_bottom: 15,
-                    set_margin_end: 15,
-                    set_margin_start: 15,
-                    set_margin_top: 15,
-                    set_row_spacing: 15,
-                    set_width_request: 500,
+                    add_css_class: "login-grid",
+                    set_column_spacing: 0,
+                    set_margin_bottom: 0,
+                    set_margin_end: 0,
+                    set_margin_start: 0,
+                    set_margin_top: 0,
+                    set_row_spacing: 14,
+                    set_width_request: 280,
+
+                    /// Selected user avatar
+                    #[name = "profile_button"]
+                    attach[0, 0, 1, 1] = &gtk::Button {
+                        add_css_class: "profile-button",
+                        set_halign: gtk::Align::Center,
+                        set_tooltip_text: Some("Switch user"),
+
+                        gtk::Box {
+                            add_css_class: "profile-avatar",
+                            set_halign: gtk::Align::Center,
+                            set_size_request: (88, 88),
+                            set_overflow: gtk::Overflow::Hidden,
+
+                            #[name = "profile_avatar"]
+                            gtk::Picture {
+                                add_css_class: "profile-avatar-image",
+                                set_halign: gtk::Align::Center,
+                                set_valign: gtk::Align::Center,
+                                set_size_request: (80, 80),
+                                set_content_fit: gtk::ContentFit::Cover,
+                                set_can_shrink: true,
+                                set_overflow: gtk::Overflow::Hidden,
+                            },
+                        },
+                    },
 
                     /// Widget to display messages to the user
                     #[name = "message_label"]
-                    attach[0, 0, 3, 1] = &gtk::Label {
-                        set_margin_bottom: 15,
+                    attach[0, 1, 1, 1] = &gtk::Label {
+                        add_css_class: "message-label",
+                        set_margin_bottom: 4,
 
                         // Format all messages in boldface.
                         #[wrap(Some)]
@@ -89,68 +124,91 @@ impl WidgetTemplate for Ui {
                     },
 
                     #[template]
-                    attach[0, 1, 1, 1] = &EntryLabel {
-                        set_label: "User:",
-                        set_height_request: 45,
+                    attach[0, 2, 1, 1] = &EntryLabel {
+                        add_css_class: "field-label",
+                        set_label: "Session:",
+                        set_height_request: 44,
+                        set_visible: false,
                     },
 
                     /// Label for the sessions widget
                     #[name = "session_label"]
                     #[template]
-                    attach[0, 2, 1, 1] = &EntryLabel {
-                        set_label: "Session:",
-                        set_height_request: 45,
+                    attach[0, 3, 1, 1] = &EntryLabel {
+                        add_css_class: "field-label",
+                        set_label: "User:",
+                        set_height_request: 44,
+                        set_visible: false,
                     },
 
                     /// Widget containing the usernames
                     #[name = "usernames_box"]
-                    attach[1, 1, 1, 1] = &gtk::ComboBoxText { set_hexpand: true },
+                    attach[0, 3, 1, 1] = &gtk::ComboBoxText {
+                        add_css_class: "identity-field",
+                        set_hexpand: true,
+                        set_visible: false,
+                    },
 
                     /// Widget where the user enters the username
                     #[name = "username_entry"]
-                    attach[1, 1, 1, 1] = &gtk::Entry { set_hexpand: true },
-
-                    /// Widget containing the sessions
-                    #[name = "sessions_box"]
-                    attach[1, 2, 1, 1] = &gtk::ComboBoxText,
+                    attach[0, 3, 1, 1] = &gtk::Entry {
+                        add_css_class: "identity-field",
+                        set_hexpand: true,
+                        set_visible: false,
+                    },
 
                     /// Widget where the user enters the session
                     #[name = "session_entry"]
-                    attach[1, 2, 1, 1] = &gtk::Entry,
+                    attach[0, 2, 1, 1] = &gtk::Entry {
+                        add_css_class: "identity-field",
+                        set_visible: false,
+                    },
 
                     /// Label for the password widget
                     #[name = "input_label"]
                     #[template]
-                    attach[0, 2, 1, 1] = &EntryLabel {
-                        set_height_request: 45,
+                    attach[0, 4, 1, 1] = &EntryLabel {
+                        add_css_class: "field-label",
+                        set_label: "Password:",
+                        set_height_request: 44,
+                        set_visible: false,
                     },
 
                     /// Widget where the user enters a secret
                     #[name = "secret_entry"]
-                    attach[1, 2, 1, 1] = &gtk::PasswordEntry { set_show_peek_icon: true },
+                    attach[0, 5, 1, 1] = &gtk::PasswordEntry {
+                        add_css_class: "password-field",
+                        set_show_peek_icon: true,
+                    },
 
                     /// Widget where the user enters something visible
                     #[name = "visible_entry"]
-                    attach[1, 2, 1, 1] = &gtk::Entry,
+                    attach[0, 5, 1, 1] = &gtk::Entry {
+                        add_css_class: "password-field",
+                    },
 
                     /// Button to toggle manual user entry
                     #[name = "user_toggle"]
-                    attach[2, 1, 1, 1] = &gtk::ToggleButton {
+                    attach[0, 6, 1, 1] = &gtk::ToggleButton {
+                        add_css_class: "field-toggle",
                         set_icon_name: "document-edit-symbolic",
                         set_tooltip_text: Some("Manually enter username"),
+                        set_visible: false,
                     },
 
                     /// Button to toggle manual session entry
                     #[name = "sess_toggle"]
-                    attach[2, 2, 1, 1] = &gtk::ToggleButton {
+                    attach[0, 6, 1, 1] = &gtk::ToggleButton {
+                        add_css_class: "field-toggle",
                         set_icon_name: "document-edit-symbolic",
                         set_tooltip_text: Some("Manually enter session command"),
+                        set_visible: false,
                     },
 
                     /// Collection of action buttons (eg. Login)
-                    attach[1, 3, 2, 1] = &gtk::Box {
-                        set_halign: gtk::Align::End,
-                        set_spacing: 15,
+                    attach[0, 6, 1, 1] = &gtk::Box {
+                        set_halign: gtk::Align::Center,
+                        set_margin_top: 2,
 
                         /// Button to cancel password entry
                         #[name = "cancel_button"]
@@ -166,9 +224,20 @@ impl WidgetTemplate for Ui {
                             set_label: "Login",
                             set_receives_default: true,
                             add_css_class: "suggested-action",
+                            set_hexpand: true,
                         },
                     },
                 },
+            },
+
+            /// Session selector
+            #[name = "sessions_box"]
+            add_overlay = &gtk::ComboBoxText {
+                add_css_class: "session-field",
+                set_halign: gtk::Align::Start,
+                set_valign: gtk::Align::End,
+                set_margin_start: 28,
+                set_margin_bottom: 28,
             },
 
             /// Clock widget

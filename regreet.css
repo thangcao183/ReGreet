@@ -1,0 +1,277 @@
+window {
+    background-color: #080b10;
+    color: #f7fafc;
+}
+
+picture {
+    background-color: #080b10;
+}
+
+frame.background {
+    background-color: alpha(#0b1220, 0.66);
+    border: 1px solid alpha(#ffffff, 0.18);
+    border-radius: 20px;
+    box-shadow: 0 24px 80px alpha(#000000, 0.48);
+    color: #f8fafc;
+}
+
+frame.login-shell {
+    background-color: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    color: #f8fafc;
+}
+
+.login-grid {
+    background-color: transparent;
+}
+
+.profile-button {
+    min-width: 96px;
+    min-height: 96px;
+    background-color: transparent;
+    border: 0;
+    border-radius: 999px;
+    padding: 4px;
+    box-shadow: none;
+}
+
+.profile-button:hover {
+    background-color: alpha(#ffffff, 0.10);
+}
+
+.profile-button:focus {
+    box-shadow: 0 0 0 3px alpha(#38bdf8, 0.30);
+}
+
+.profile-avatar {
+    min-width: 88px;
+    min-height: 88px;
+    background-color: alpha(#e5e7eb, 0.10);
+    border: 2px solid alpha(#ffffff, 0.90);
+    border-radius: 999px;
+    box-shadow: 0 12px 28px alpha(#000000, 0.42);
+    padding: 2px;
+}
+
+.profile-avatar-image {
+    min-width: 80px;
+    min-height: 80px;
+    background-color: transparent;
+    border-radius: 999px;
+    padding: 0;
+}
+
+.message-label {
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+label {
+    color: alpha(#f8fafc, 0.82);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.field-label {
+    color: alpha(#e2e8f0, 0.78);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+entry,
+passwordentry,
+combobox button {
+    min-height: 44px;
+    background-color: alpha(#020617, 0.58);
+    border: 1px solid alpha(#ffffff, 0.20);
+    border-radius: 14px;
+    color: #ffffff;
+    padding: 0 12px;
+    box-shadow: none;
+}
+
+.identity-field,
+.password-field {
+    min-width: 260px;
+}
+
+.password-field {
+    min-width: 280px;
+}
+
+.identity-field button,
+.identity-field entry,
+.password-field,
+.password-field entry {
+    background-color: alpha(#020617, 0.62);
+}
+
+.identity-field button {
+    padding-left: 14px;
+    padding-right: 10px;
+}
+
+.identity-field button:hover,
+.identity-field:hover button,
+.identity-field:hover entry,
+.password-field:hover {
+    background-color: alpha(#0f172a, 0.78);
+    border-color: alpha(#bae6fd, 0.34);
+}
+
+.identity-field arrow {
+    color: alpha(#bae6fd, 0.88);
+    min-width: 16px;
+    min-height: 16px;
+}
+
+entry:focus,
+passwordentry:focus,
+combobox button:focus {
+    background-color: alpha(#020617, 0.74);
+    border-color: alpha(#93c5fd, 0.95);
+    box-shadow: 0 0 0 3px alpha(#3b82f6, 0.24);
+}
+
+entry text,
+passwordentry text {
+    color: #ffffff;
+}
+
+button {
+    min-height: 44px;
+    border-radius: 14px;
+    padding: 0 16px;
+    font-weight: 700;
+}
+
+button.suggested-action {
+    background: linear-gradient(135deg, #06b6d4, #2563eb);
+    border: 1px solid alpha(#ffffff, 0.22);
+    color: #ffffff;
+    box-shadow: 0 12px 28px alpha(#1d4ed8, 0.34);
+}
+
+button.suggested-action:hover {
+    background: linear-gradient(135deg, #67e8f9, #60a5fa);
+}
+
+.login-grid button.suggested-action {
+    min-width: 280px;
+}
+
+button.destructive-action {
+    background-color: alpha(#111827, 0.66);
+    border: 1px solid alpha(#ffffff, 0.18);
+    color: alpha(#f8fafc, 0.86);
+}
+
+button.destructive-action:hover {
+    background-color: alpha(#ef4444, 0.78);
+    color: #ffffff;
+}
+
+togglebutton {
+    min-width: 42px;
+    min-height: 44px;
+    border-radius: 14px;
+    background-color: alpha(#020617, 0.56);
+    border: 1px solid alpha(#ffffff, 0.18);
+    color: #ffffff;
+}
+
+.field-toggle {
+    color: alpha(#dbeafe, 0.92);
+}
+
+.field-toggle:hover {
+    background-color: alpha(#1e293b, 0.82);
+    border-color: alpha(#bae6fd, 0.38);
+}
+
+togglebutton:checked {
+    background-color: alpha(#38bdf8, 0.42);
+    border-color: alpha(#7dd3fc, 0.84);
+}
+
+infobar {
+    border-radius: 12px;
+}
+
+infobar.error {
+    background-color: alpha(#7f1d1d, 0.92);
+    color: #ffffff;
+}
+
+popover,
+popover contents {
+    background-color: alpha(#020617, 0.98);
+    color: #ffffff;
+    border: 1px solid alpha(#ffffff, 0.12);
+    border-radius: 14px;
+    box-shadow: 0 18px 44px alpha(#000000, 0.46);
+}
+
+popover list,
+popover row {
+    background-color: transparent;
+    color: #f8fafc;
+}
+
+popover row {
+    min-height: 36px;
+    padding: 6px 10px;
+}
+
+popover row:hover,
+popover row:selected {
+    background-color: alpha(#2563eb, 0.36);
+    color: #ffffff;
+}
+
+.session-field {
+    min-width: 250px;
+    background-color: transparent;
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+}
+
+.session-field button {
+    min-height: 42px;
+    background-color: transparent;
+    background-image: none;
+    border: 0;
+    border-radius: 0;
+    color: #f8fafc;
+    padding-left: 0;
+    padding-right: 0;
+    box-shadow: none;
+    text-shadow: 0 2px 8px alpha(#000000, 0.78);
+}
+
+.session-field button:hover,
+.session-field button:focus {
+    background-color: transparent;
+    background-image: none;
+    border: 0;
+    box-shadow: none;
+    color: #ffffff;
+}
+
+.session-field arrow {
+    color: alpha(#ffffff, 0.72);
+    min-width: 16px;
+    min-height: 16px;
+}
+
+.session-field button label {
+    color: #f8fafc;
+    font-size: 14px;
+    font-weight: 700;
+    text-shadow: 0 2px 8px alpha(#000000, 0.78);
+}

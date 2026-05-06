@@ -165,7 +165,6 @@ impl Config {
         self.background.is_video()
     }
 
-    #[cfg(feature = "gtk4_8")]
     pub fn get_background_fit(&self) -> &BgFit {
         &self.background.fit
     }

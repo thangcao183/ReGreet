@@ -6,7 +6,7 @@
 
 #![allow(deprecated)]
 
-use std::path::PathBuf;
+use std::{env, path::{Path, PathBuf}};
 
 use relm4::{
     AsyncComponentSender,
@@ -16,12 +16,14 @@ use relm4::{
 };
 use tracing::{debug, info, warn};
 
-#[cfg(feature = "gtk4_8")]
 use crate::config::BgFit;
 
 use super::messages::{CommandMsg, InputMsg, UserSessInfo};
 use super::model::{Greeter, InputMode, Updates};
 use super::templates::Ui;
+
+const AVATAR_SIZE: i32 = 80;
+const DEFAULT_CSS: &str = include_str!("../../regreet.css");
 
 /// Load GTK settings from the greeter config.
 fn setup_settings(model: &Greeter, root: &gtk::ApplicationWindow) {
@@ -68,16 +70,73 @@ fn setup_background(model: &Greeter, widgets: &GreeterWidgets) {
     let is_video = model.config.is_video_background();
     let has_background = background_path.is_some();
 
+    debug!(
+        "background path={:?}, is_video={}, has_background={}",
+        background_path, is_video, has_background
+    );
+
+    widgets.ui.background_box.set_visible(has_background);
     widgets.ui.background_image.set_visible(has_background && !is_video);
     widgets.ui.background_video.set_visible(has_background && is_video);
 
     if is_video {
         if let Some(path) = background_path {
-            widgets.ui.background_video.set_filename(Some(path));
+            debug!("setting video filename: {}", path);
+            let media = gtk::MediaFile::for_filename(path);
+            media.set_loop(true);
+            media.set_muted(true);
+            media.play();
+            widgets.ui.background_video.set_paintable(Some(&media));
         }
     } else {
+        if let Some(path) = background_path {
+            debug!("setting image filename: {}", path);
+        }
         widgets.ui.background_image.set_filename(background_path);
     }
+}
+
+fn set_profile_avatar_picture(profile_avatar: &gtk::Picture, username: Option<&str>, demo: bool) {
+    let face_path = username
+        .map(|username| format!("/home/{username}/.face"))
+        .filter(|path| Path::new(path).exists())
+        .or_else(|| {
+            if demo {
+                env::var("USER")
+                    .ok()
+                    .map(|username| format!("/home/{username}/.face"))
+                    .filter(|path| Path::new(path).exists())
+            } else {
+                None
+            }
+        });
+
+    let Some(face_path) = face_path else {
+        debug!("profile avatar not found for user: {:?}", username);
+        profile_avatar.set_paintable(gtk::gdk::Paintable::NONE);
+        return;
+    };
+
+    match gtk::gdk_pixbuf::Pixbuf::from_file_at_scale(
+        &face_path,
+        AVATAR_SIZE,
+        AVATAR_SIZE,
+        true,
+    ) {
+        Ok(pixbuf) => {
+            let texture = gtk::gdk::Texture::for_pixbuf(&pixbuf);
+            debug!("setting profile avatar: {}", face_path);
+            profile_avatar.set_paintable(Some(&texture));
+        }
+        Err(err) => {
+            warn!("couldn't load profile avatar '{}': {}", face_path, err);
+            profile_avatar.set_paintable(gtk::gdk::Paintable::NONE);
+        }
+    }
+}
+
+fn set_profile_avatar(model: &Greeter, widgets: &GreeterWidgets, username: Option<&str>) {
+    set_profile_avatar_picture(&widgets.ui.profile_avatar, username, model.demo);
 }
 
 /// Populate the user and session combo boxes with entries.
@@ -117,6 +176,8 @@ fn setup_users_sessions(model: &Greeter, widgets: &GreeterWidgets) {
             warn!("Couldn't find user '{user}' to set as the initial user");
         }
     }
+
+    set_profile_avatar(model, widgets, widgets.ui.usernames_box.active_id().as_deref());
 }
 
 /// The info required to initialize the greeter
@@ -138,6 +199,7 @@ impl AsyncComponent for Greeter {
         #[name = "window"]
         gtk::ApplicationWindow {
             set_visible: true,
+            set_fullscreened: true,
 
             // Name the UI widget, otherwise the inner children cannot be accessed by name.
             #[name = "ui"]
@@ -156,7 +218,7 @@ impl AsyncComponent for Greeter {
                 #[template_child]
                 session_label {
                     #[track(model.updates.changed(Updates::input_mode()))]
-                    set_visible: !model.updates.is_input(),
+                    set_visible: false,
                 },
                 #[template_child]
                 usernames_box {
@@ -166,17 +228,36 @@ impl AsyncComponent for Greeter {
                     )]
                     set_sensitive: !model.updates.manual_user_mode && !model.updates.is_input(),
                     #[track(model.updates.changed(Updates::manual_user_mode()))]
-                    set_visible: !model.updates.manual_user_mode,
+                    set_visible: false,
                     connect_changed[
                         sender,
                         username_entry = ui.username_entry.clone(),
                         sessions_box = ui.sessions_box.clone(),
                         session_entry = ui.session_entry.clone(),
+                        profile_avatar = ui.profile_avatar.clone(),
+                        demo = model.demo,
                     ] => move |this| sender.input(
-                        Self::Input::UserChanged(
-                            UserSessInfo::extract(this, &username_entry, &sessions_box, &session_entry)
-                        )
+                        {
+                            let username = this.active_id();
+                            set_profile_avatar_picture(&profile_avatar, username.as_deref(), demo);
+                            Self::Input::UserChanged(
+                                UserSessInfo::extract(this, &username_entry, &sessions_box, &session_entry)
+                            )
+                        }
                     ),
+                },
+                #[template_child]
+                profile_button {
+                    connect_clicked[
+                        usernames_box = ui.usernames_box.clone(),
+                        users_count = model.sys_util.get_users().len() as u32,
+                    ] => move |_| {
+                        if users_count == 0 {
+                            return;
+                        }
+                        let current = usernames_box.active().unwrap_or(0);
+                        usernames_box.set_active(Some((current + 1) % users_count));
+                    },
                 },
                 #[template_child]
                 username_entry {
@@ -186,7 +267,7 @@ impl AsyncComponent for Greeter {
                     )]
                     set_sensitive: model.updates.manual_user_mode && !model.updates.is_input(),
                     #[track(model.updates.changed(Updates::manual_user_mode()))]
-                    set_visible: model.updates.manual_user_mode,
+                    set_visible: false,
                 },
                 #[template_child]
                 sessions_box {
@@ -194,7 +275,7 @@ impl AsyncComponent for Greeter {
                         model.updates.changed(Updates::manual_sess_mode())
                         || model.updates.changed(Updates::input_mode())
                     )]
-                    set_visible: !model.updates.manual_sess_mode && !model.updates.is_input(),
+                    set_visible: !model.updates.manual_sess_mode,
                     #[track(model.updates.changed(Updates::active_session_id()))]
                     set_active_id: model.updates.active_session_id.as_deref(),
                 },
@@ -204,22 +285,26 @@ impl AsyncComponent for Greeter {
                         model.updates.changed(Updates::manual_sess_mode())
                         || model.updates.changed(Updates::input_mode())
                     )]
-                    set_visible: model.updates.manual_sess_mode && !model.updates.is_input(),
+                    set_visible: false,
                 },
                 #[template_child]
                 input_label {
                     #[track(model.updates.changed(Updates::input_mode()))]
-                    set_visible: model.updates.is_input(),
+                    set_visible: false,
                     #[track(model.updates.changed(Updates::input_prompt()))]
-                    set_label: &model.updates.input_prompt,
+                    set_label: if model.updates.input_prompt.is_empty() {
+                        "Password:"
+                    } else {
+                        &model.updates.input_prompt
+                    },
                 },
                 #[template_child]
                 secret_entry {
                     #[track(model.updates.changed(Updates::input_mode()))]
-                    set_visible: model.updates.input_mode == InputMode::Secret,
+                    set_visible: model.updates.input_mode != InputMode::Visible,
                     #[track(
                         model.updates.changed(Updates::input_mode())
-                        && model.updates.input_mode == InputMode::Secret
+                        && model.updates.input_mode != InputMode::Visible
                     )]
                     grab_focus: (),
                     #[track(model.updates.changed(Updates::input()))]
@@ -268,13 +353,15 @@ impl AsyncComponent for Greeter {
                 #[template_child]
                 user_toggle {
                     #[track(model.updates.changed(Updates::input_mode()))]
-                    set_sensitive: !model.updates.is_input(),
+                    set_sensitive: model.updates.input_mode == InputMode::None,
+                    #[track(model.updates.changed(Updates::input_mode()))]
+                    set_visible: false,
                     connect_clicked => Self::Input::ToggleManualUser,
                 },
                 #[template_child]
                 sess_toggle {
                     #[track(model.updates.changed(Updates::input_mode()))]
-                    set_visible: !model.updates.is_input(),
+                    set_visible: false,
                     connect_clicked => Self::Input::ToggleManualSess,
                 },
                 #[template_child]
@@ -357,18 +444,14 @@ impl AsyncComponent for Greeter {
         // actual visuals are controlled by `InfoBar::set_revealed`.
         widgets.ui.error_info.set_visible(true);
 
-        // cfg directives don't work inside Relm4 view! macro.
-        #[cfg(feature = "gtk4_8")]
-        {
-            let content_fit = match model.config.get_background_fit() {
-                BgFit::Fill => gtk4::ContentFit::Fill,
-                BgFit::Contain => gtk4::ContentFit::Contain,
-                BgFit::Cover => gtk4::ContentFit::Cover,
-                BgFit::ScaleDown => gtk4::ContentFit::ScaleDown,
-            };
-            widgets.ui.background_image.set_content_fit(content_fit);
-            // Note: Video widget does not have set_content_fit method
-        }
+        let content_fit = match model.config.get_background_fit() {
+            BgFit::Fill => gtk4::ContentFit::Fill,
+            BgFit::Contain => gtk4::ContentFit::Contain,
+            BgFit::Cover => gtk4::ContentFit::Cover,
+            BgFit::ScaleDown => gtk4::ContentFit::ScaleDown,
+        };
+        widgets.ui.background_image.set_content_fit(content_fit);
+        // Note: Video widget does not have set_content_fit method
 
         // Cancel any previous session, just in case someone started one.
         if let Err(err) = model.greetd_client.lock().await.cancel_session().await {
@@ -390,14 +473,22 @@ impl AsyncComponent for Greeter {
         setup_settings(&model, &root);
         setup_users_sessions(&model, &widgets);
 
+        let default_provider = gtk::CssProvider::new();
+        default_provider.load_from_string(DEFAULT_CSS);
+        gtk::style_context_add_provider_for_display(
+            &widgets.ui.display(),
+            &default_provider,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
+
         if input.css_path.exists() {
             debug!("Loading custom CSS from file: {}", input.css_path.display());
-            let provider = gtk::CssProvider::new();
-            provider.load_from_path(input.css_path);
+            let custom_provider = gtk::CssProvider::new();
+            custom_provider.load_from_path(input.css_path);
             gtk::style_context_add_provider_for_display(
                 &widgets.ui.display(),
-                &provider,
-                gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+                &custom_provider,
+                gtk::STYLE_PROVIDER_PRIORITY_APPLICATION + 1,
             );
         };
 

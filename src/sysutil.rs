@@ -56,7 +56,22 @@ pub struct SysUtil {
 }
 
 impl SysUtil {
-    pub async fn new(config: &Config) -> Result<Self, Box<dyn Error>> {
+    pub async fn new(config: &Config, demo: bool) -> Result<Self, Box<dyn Error>> {
+        if demo {
+            // In demo mode, use mock users and sessions
+            let mut usernames = HashMap::new();
+            usernames.insert("Demo User".to_string(), "demo".to_string());
+
+            let mut shells = HashMap::new();
+            shells.insert("demo".to_string(), "/bin/bash".to_string());
+
+            return Ok(Self {
+                users: usernames,
+                shells,
+                sessions: Self::init_sessions(config)?,
+            });
+        }
+
         let dbus_system_conn = Connection::system().await?;
         let accounts_proxy = AccountsServiceProxy::new(&dbus_system_conn).await?;
 
