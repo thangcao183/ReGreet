@@ -60,8 +60,6 @@ pub(super) struct Updates {
     pub(super) active_session_id: Option<String>,
     /// Time that is displayed
     pub(super) time: String,
-    /// Monitor where the window is displayed
-    pub(super) monitor: Option<Monitor>,
 }
 
 impl Updates {
@@ -112,7 +110,6 @@ impl Greeter {
             active_session_id: None,
             tracker: 0,
             time: "".to_string(),
-            monitor: None,
         };
         let greetd_client = Arc::new(Mutex::new(
             GreetdClient::new(demo)
@@ -139,7 +136,7 @@ impl Greeter {
         }
     }
 
-    /// Make the greeter full screen over the first monitor.
+    /// Setup monitor detection and handling (now spans all monitors)
     #[instrument(skip(self, sender))]
     pub(super) fn choose_monitor(
         &mut self,
@@ -154,7 +151,7 @@ impl Greeter {
             }
         };
 
-        let mut chosen_monitor = None;
+        // Setup monitor removal detection for all monitors
         for monitor in display
             .monitors()
             .into_iter()
@@ -169,13 +166,7 @@ impl Greeter {
                 let display_name = monitor.display().name();
                 sender.oneshot_command(async move { CommandMsg::MonitorRemoved(display_name) })
             });
-            if chosen_monitor.is_none() {
-                // Choose the first monitor.
-                chosen_monitor = Some(monitor);
-            }
         }
-
-        self.updates.set_monitor(chosen_monitor);
     }
 
     /// Run a command and log any errors in a background thread.

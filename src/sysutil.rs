@@ -9,7 +9,7 @@ mod accounts_service;
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::error::Error;
-use std::fs::read;
+use std::fs::{read, read_to_string};
 use std::io;
 use std::path::Path;
 use std::str::from_utf8;
@@ -72,6 +72,26 @@ impl SysUtil {
             });
         }
 
+        let (usernames, shells) = match Self::init_users_from_accounts().await {
+            Ok((usernames, shells)) if !usernames.is_empty() => (usernames, shells),
+            Ok(_) => {
+                warn!("AccountsService returned no users; falling back to /etc/passwd");
+                Self::init_users_from_passwd()?
+            }
+            Err(err) => {
+                warn!("Couldn't read users from AccountsService: {err}; falling back to /etc/passwd");
+                Self::init_users_from_passwd()?
+            }
+        };
+
+        Ok(Self {
+            users: usernames,
+            shells,
+            sessions: Self::init_sessions(config)?,
+        })
+    }
+
+    async fn init_users_from_accounts() -> Result<(UserMap, ShellMap), Box<dyn Error>> {
         let dbus_system_conn = Connection::system().await?;
         let accounts_proxy = AccountsServiceProxy::new(&dbus_system_conn).await?;
 
@@ -108,11 +128,41 @@ impl SysUtil {
             shells.insert(user_name, shell);
         }
 
-        Ok(Self {
-            users: usernames,
-            shells,
-            sessions: Self::init_sessions(config)?,
-        })
+        Ok((usernames, shells))
+    }
+
+    fn init_users_from_passwd() -> io::Result<(UserMap, ShellMap)> {
+        let passwd = read_to_string("/etc/passwd")?;
+        let mut usernames = HashMap::new();
+        let mut shells = HashMap::new();
+
+        for line in passwd.lines() {
+            let fields: Vec<&str> = line.split(':').collect();
+            if fields.len() < 7 {
+                continue;
+            }
+
+            let user_name = fields[0];
+            let uid = fields[2].parse::<u32>().unwrap_or(0);
+            let gecos = fields[4];
+            let shell = fields[6];
+
+            if uid < 1000 || shell.ends_with("/nologin") || shell.ends_with("/false") {
+                continue;
+            }
+
+            let real_name = gecos.split(',').next().unwrap_or_default();
+            let display_name = if real_name.is_empty() {
+                user_name
+            } else {
+                real_name
+            };
+
+            usernames.insert(display_name.to_string(), user_name.to_string());
+            shells.insert(user_name.to_string(), shell.to_string());
+        }
+
+        Ok((usernames, shells))
     }
 
     /// Get available X11 and Wayland sessions.

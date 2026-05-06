@@ -22,6 +22,10 @@ pub struct ClockConfig {
     #[serde(alias = "fmt", default = "weekday_and_24h_time")]
     pub format: String,
 
+    /// Optional second line for a date label.
+    #[serde(default)]
+    pub date_format: Option<String>,
+
     /// Amount of time between the clock's text updates
     #[serde(
         alias = "interval",
@@ -61,6 +65,7 @@ impl Default for ClockConfig {
     fn default() -> Self {
         Self {
             format: weekday_and_24h_time(),
+            date_format: None,
             resolution: half_second(),
             timezone: system_tz(),
             label_width: label_width(),
@@ -97,9 +102,11 @@ where
 #[derive(Debug)]
 pub struct Clock {
     format: String,
+    date_format: Option<String>,
     timezone: TimeZone,
 
     current_time: String,
+    current_date: String,
 }
 
 /// A fixed-interval command output.
@@ -117,17 +124,35 @@ impl Component for Clock {
     type CommandOutput = Tick;
 
     view! {
-        gtk::Label {
+        gtk::Box {
+            set_orientation: gtk::Orientation::Vertical,
             set_width_request: label_width.min(i32::MAX as u32) as i32,
 
-            #[watch]
-            set_text: &model.current_time
+            gtk::Label {
+                add_css_class: "clock-time",
+                set_xalign: 0.5,
+
+                #[watch]
+                set_text: &model.current_time,
+            },
+
+            gtk::Label {
+                add_css_class: "clock-date",
+                set_xalign: 0.5,
+
+                #[watch]
+                set_visible: model.date_format.is_some(),
+
+                #[watch]
+                set_text: &model.current_date,
+            }
         }
     }
 
     fn init(
         ClockConfig {
             format,
+            date_format,
             resolution,
             timezone,
             label_width,
@@ -151,7 +176,9 @@ impl Component for Clock {
 
         let model = Self {
             current_time: String::new(),
+            current_date: String::new(),
             format,
+            date_format,
             timezone,
         };
 
@@ -169,6 +196,16 @@ impl Component for Clock {
                 .unwrap_or_else(|_| "Time formatting error.".into()),
         };
 
+        let date = self
+            .date_format
+            .as_ref()
+            .map(|format| {
+                jiff::fmt::strtime::format(format, &now)
+                    .unwrap_or_else(|_| "Date formatting error.".into())
+            })
+            .unwrap_or_default();
+
         self.current_time = text;
+        self.current_date = date;
     }
 }

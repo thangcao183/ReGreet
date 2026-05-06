@@ -6,7 +6,7 @@
 
 #![allow(deprecated)]
 
-use std::{env, path::{Path, PathBuf}};
+use std::{env, path::PathBuf};
 
 use relm4::{
     AsyncComponentSender,
@@ -82,11 +82,51 @@ fn setup_background(model: &Greeter, widgets: &GreeterWidgets) {
     if is_video {
         if let Some(path) = background_path {
             debug!("setting video filename: {}", path);
-            let media = gtk::MediaFile::for_filename(path);
-            media.set_loop(true);
-            media.set_muted(true);
-            media.play();
-            widgets.ui.background_video.set_paintable(Some(&media));
+            
+            // Get all monitors and create video for each
+            let mut monitor_count = 0;
+            let display = widgets.ui.display();
+            for _monitor_item in display
+                .monitors()
+                .into_iter()
+                .filter_map(|item| {
+                    item.ok()
+                        .and_then(|object| object.downcast::<gtk::gdk::Monitor>().ok())
+                })
+                .filter(gtk::gdk::Monitor::is_valid)
+            {
+                // Create a Picture widget for each monitor
+                let picture = gtk::Picture::new();
+                picture.set_hexpand(true);
+                picture.set_vexpand(true);
+                picture.set_halign(gtk::Align::Fill);
+                picture.set_valign(gtk::Align::Fill);
+                picture.set_content_fit(gtk::ContentFit::Cover);
+                
+                // Set up the video
+                let media = gtk::MediaFile::for_filename(&path);
+                media.set_loop(true);
+                media.set_muted(true);
+                media.play();
+                picture.set_paintable(Some(&media));
+                
+                // Add to background box
+                widgets.ui.background_box.append(&picture);
+                monitor_count += 1;
+            }
+            
+            // If any monitors detected, hide the template background_video and use per-monitor videos
+            if monitor_count > 0 {
+                debug!("Monitors detected ({monitor_count}), using per-monitor videos");
+                widgets.ui.background_video.set_visible(false);
+            } else {
+                debug!("No monitors detected, using template background_video");
+                let media = gtk::MediaFile::for_filename(&path);
+                media.set_loop(true);
+                media.set_muted(true);
+                media.play();
+                widgets.ui.background_video.set_paintable(Some(&media));
+            }
         }
     } else {
         if let Some(path) = background_path {
@@ -96,20 +136,30 @@ fn setup_background(model: &Greeter, widgets: &GreeterWidgets) {
     }
 }
 
+fn profile_avatar_paths(username: Option<&str>, demo: bool) -> Vec<PathBuf> {
+    let mut paths = Vec::new();
+
+    if let Some(username) = username {
+        paths.push(PathBuf::from(format!("/home/{username}/.face")));
+        paths.push(PathBuf::from(format!("/var/lib/regreet/faces/{username}")));
+        paths.push(PathBuf::from(format!(
+            "/var/lib/AccountsService/icons/{username}"
+        )));
+    }
+
+    if demo {
+        if let Ok(username) = env::var("USER") {
+            paths.push(PathBuf::from(format!("/home/{username}/.face")));
+        }
+    }
+
+    paths
+}
+
 fn set_profile_avatar_picture(profile_avatar: &gtk::Picture, username: Option<&str>, demo: bool) {
-    let face_path = username
-        .map(|username| format!("/home/{username}/.face"))
-        .filter(|path| Path::new(path).exists())
-        .or_else(|| {
-            if demo {
-                env::var("USER")
-                    .ok()
-                    .map(|username| format!("/home/{username}/.face"))
-                    .filter(|path| Path::new(path).exists())
-            } else {
-                None
-            }
-        });
+    let face_path = profile_avatar_paths(username, demo)
+        .into_iter()
+        .find(|path| path.exists());
 
     let Some(face_path) = face_path else {
         debug!("profile avatar not found for user: {:?}", username);
@@ -125,11 +175,11 @@ fn set_profile_avatar_picture(profile_avatar: &gtk::Picture, username: Option<&s
     ) {
         Ok(pixbuf) => {
             let texture = gtk::gdk::Texture::for_pixbuf(&pixbuf);
-            debug!("setting profile avatar: {}", face_path);
+            debug!("setting profile avatar: {}", face_path.display());
             profile_avatar.set_paintable(Some(&texture));
         }
         Err(err) => {
-            warn!("couldn't load profile avatar '{}': {}", face_path, err);
+            warn!("couldn't load profile avatar '{}': {}", face_path.display(), err);
             profile_avatar.set_paintable(gtk::gdk::Paintable::NONE);
         }
     }
@@ -199,6 +249,7 @@ impl AsyncComponent for Greeter {
         #[name = "window"]
         gtk::ApplicationWindow {
             set_visible: true,
+            set_decorated: false,
             set_fullscreened: true,
 
             // Name the UI widget, otherwise the inner children cannot be accessed by name.
@@ -421,16 +472,6 @@ impl AsyncComponent for Greeter {
         }
     }
 
-    fn post_view() {
-        if model.updates.changed(Updates::monitor()) {
-            if let Some(monitor) = &model.updates.monitor {
-                widgets.window.fullscreen_on_monitor(monitor);
-                // For some reason, the GTK settings are reset when changing monitors, so re-apply them.
-                setup_settings(self, &widgets.window);
-            }
-        }
-    }
-
     /// Initialize the greeter.
     async fn init(
         input: Self::Init,
@@ -459,14 +500,8 @@ impl AsyncComponent for Greeter {
         };
 
         model.choose_monitor(widgets.ui.display().name().as_str(), &sender);
-        if let Some(monitor) = &model.updates.monitor {
-            // The window needs to be manually fullscreened, since the monitor is `None` at widget
-            // init.
-            root.fullscreen_on_monitor(monitor);
-        } else {
-            // Couldn't choose a monitor, so let the compositor choose it for us.
-            root.fullscreen();
-        }
+        // Fullscreen on all monitors
+        root.fullscreen();
 
         // For some reason, the GTK settings are reset when changing monitors, so apply them after
         // full-screening.
