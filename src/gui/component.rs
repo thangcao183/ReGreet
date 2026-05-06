@@ -359,15 +359,16 @@ impl AsyncComponent for Greeter {
 
         // cfg directives don't work inside Relm4 view! macro.
         #[cfg(feature = "gtk4_8")]
-        widgets
-            .ui
-            .background
-            .set_content_fit(match model.config.get_background_fit() {
+        {
+            let content_fit = match model.config.get_background_fit() {
                 BgFit::Fill => gtk4::ContentFit::Fill,
                 BgFit::Contain => gtk4::ContentFit::Contain,
                 BgFit::Cover => gtk4::ContentFit::Cover,
                 BgFit::ScaleDown => gtk4::ContentFit::ScaleDown,
-            });
+            };
+            widgets.ui.background_image.set_content_fit(content_fit);
+            widgets.ui.background_video.set_content_fit(content_fit);
+        }
 
         // Cancel any previous session, just in case someone started one.
         if let Err(err) = model.greetd_client.lock().await.cancel_session().await {
