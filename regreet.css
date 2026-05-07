@@ -288,7 +288,7 @@ combobox popover row {
     text-shadow: 0 3px 16px alpha(#000000, 0.92);
 }
 
-infobar,
+/* infobar,
 infobar.error {
     border-radius: 8px;
     background-color: alpha(#000000, 0.92);
@@ -353,4 +353,4 @@ popover list {
     background-image: none;
     border: 0;
     box-shadow: none;
-}
+} */
