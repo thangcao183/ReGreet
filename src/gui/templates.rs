@@ -127,7 +127,7 @@ impl WidgetTemplate for Ui {
                                     set_halign: gtk::Align::Center,
                                     set_valign: gtk::Align::Center,
                                     set_size_request: (112, 112),
-                                    set_content_fit: gtk::ContentFit::Cover,
+                                    set_content_fit: gtk::ContentFit::Fill,
                                     set_can_shrink: true,
                                     set_overflow: gtk::Overflow::Hidden,
                                 },

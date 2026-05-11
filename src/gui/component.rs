@@ -22,7 +22,6 @@ use super::messages::{CommandMsg, InputMsg, UserSessInfo};
 use super::model::{Greeter, InputMode, Updates};
 use super::templates::Ui;
 
-const AVATAR_SIZE: i32 = 80;
 const DEFAULT_CSS: &str = include_str!("../../regreet.css");
 
 /// Load GTK settings from the greeter config.
@@ -167,10 +166,20 @@ fn set_profile_avatar_picture(profile_avatar: &gtk::Picture, username: Option<&s
         return;
     };
 
+    let requested_size = profile_avatar
+        .width_request()
+        .max(profile_avatar.height_request())
+        .max(1);
+    let allocated_size = profile_avatar
+        .allocated_width()
+        .max(profile_avatar.allocated_height());
+    let logical_size = allocated_size.max(requested_size);
+    let texture_size = logical_size * profile_avatar.scale_factor().max(1);
+
     match gtk::gdk_pixbuf::Pixbuf::from_file_at_scale(
         &face_path,
-        AVATAR_SIZE,
-        AVATAR_SIZE,
+        texture_size,
+        texture_size,
         true,
     ) {
         Ok(pixbuf) => {
